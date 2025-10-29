@@ -119,7 +119,7 @@ export class _LobstersFunction {
     document.location = "/login?return=" + encodeURIComponent(document.location);
   }
 
-  modalFlaggingDropDown(flaggedItemType, voterEl, reasons) {
+  modalFlaggingDropDown(voterEl) {
     if (!Lobster.curUser) return Lobster.bounceToLogin();
 
     const li = parentSelector(voterEl, '.story, .comment');
@@ -132,29 +132,6 @@ export class _LobstersFunction {
       }
       return
     }
-
-    if (qS('#flag_dropdown') || qS('#modal_backdrop')) {
-      Lobster.removeFlagModal()
-    }
-
-    const modalDiv = document.createElement("div");
-    modalDiv.setAttribute('id', 'modal_backdrop');
-    document.body.appendChild(modalDiv);
-
-    const flaggingDropDown = document.createElement('div');
-    flaggingDropDown.setAttribute('id', 'flag_dropdown');
-    voterEl.after(flaggingDropDown);
-
-    Object.keys(reasons).map(function(k, v) {
-      let a = document.createElement('a')
-      a.textContent = reasons[k]
-      a.setAttribute('data', k)
-      a.setAttribute('href', '#')
-      if (k === '') {
-        a.classList.add('cancel-reason')
-      }
-      flaggingDropDown.append(a);
-    });
   }
 
   checkStoryDuplicate(form) {
@@ -439,17 +416,20 @@ export class _LobstersFunction {
       if (qS(li, '.reason')) {
         qS(li, '.reason').innerHTML = '';
       };
+		}
 
-      if (action == "unvote" && point < 0) {
-        qS(li, '.flagger').textContent = 'flag';
-      } else if (action == "flag") {
-        qS(li, '.flagger').textContent = 'unflag';
-      }
-    }
+		const el = qS(li, '.flagger');
+		if (action == "unvote" && point < 0) {
+			el.textContent = "flag";
+			el.value = "unvote";
+		} else if (action == "flag") {
+			el.textContent = `unflag (${Lobster.storyFlagReasons[reason].toLowerCase()})`;
+			el.value = "";
+		}
 
-    fetchWithCSRF("/stories/" + li.getAttribute("data-shortid") + "/" + action, {
-      method: 'post',
-      body: formData });
+		fetchWithCSRF("/stories/" + li.getAttribute("data-shortid") + "/" + action, {
+			method: 'post',
+			body: formData });
   }
 
   voteComment(voterEl, point, reason) {
@@ -602,13 +582,20 @@ onPageLoad(() => {
 
   on('change', '#story_title', Lobster.checkStoryTitle);
 
-  on('click', '.story #flag_dropdown a', (event) => {
-    event.preventDefault();
-    if (event.target.getAttribute('data') != '') {
-      Lobster.voteStory(parentSelector(event.target, '.story'), -1,  event.target.getAttribute('data'));
+  on('click', '.story .flag-dropdown button', (event) => {
+    if (event.target.value != '') {
+      Lobster.voteStory(parentSelector(event.target, '.story'), -1,  event.target.value);
     }
-    Lobster.removeFlagModal();
+		parentSelector(event.target, ".flag-dropdown").hidePopover();
   });
+
+	on('click', 'li.story button.flagger', (event) => {
+		if (event.target.value !== "unvote") { 
+			event.preventDefault();
+			Lobster.modalFlaggingDropDown(event.target);
+		}
+		
+	});
 
   on('click', '#story_fetch_title', (event) => {
     Lobster.fetchURLTitle(event.target);
@@ -617,12 +604,6 @@ onPageLoad(() => {
   on('click', 'li.story a.upvoter', (event) => {
     event.preventDefault();
     Lobster.upvoteStory(event.target);
-  });
-
-  on('click', 'li.story a.flagger', (event) => {
-    event.preventDefault();
-    const reasons = Lobster.storyFlagReasons;
-    Lobster.modalFlaggingDropDown("story", event.target, reasons);
   });
 
   on('click', 'li.story a.hider', (event) => {
@@ -755,7 +736,7 @@ onPageLoad(() => {
   on('click', '.comment a.flagger', (event) => {
     event.preventDefault();
     const reasons = Lobster.commentFlagReasons
-    Lobster.modalFlaggingDropDown("comment", event.target, reasons);
+    Lobster.modalFlaggingDropDown(event.target);
   });
 
   on('click', '.comment #flag_dropdown a', (event) => {

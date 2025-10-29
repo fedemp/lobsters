@@ -77,14 +77,23 @@ classes = [
         <% end %>
 
         <% if !ms.is_gone? && @user %>
-          <% if ms.current_flagged? %>
-            <span> | </span><a class="flagger">unflag (<%= Vote::STORY_REASONS[ms.current_vote[:reason]].to_s.downcase %>)</a>
-          <% elsif @user.can_flag?(ms) %>
-            <span> | </span>
-            <span class="dropdown_parent">
-              <a class="flagger">flag</a>
-            </span>
-          <% end %>
+          <span class="dropdown_parent">
+            <% if @user && ms.current_flagged? %>
+              <span> | </span><button class="flagger" popovertarget="flag_<%= ms.short_id %>">unflag (<%=
+                Vote::STORY_REASONS[ms.current_vote[:reason]].to_s.downcase %>)</button>
+            <% elsif @user && @user.can_flag?(ms) %>
+              <span> | </span>
+                <button type="button" class="flagger" popovertarget="flag_<%= ms.short_id %>" value="unvote">flag</button>
+            <% end %>
+            <div class="archive-dropdown flag-dropdown" id="flag_<%= ms.short_id %>" popover>
+              <ul>
+                <% Vote::STORY_REASONS.each do |key,value| %>
+                  <li><button class="<%= key.empty? ? "cancel-reason" : "" %>" type="button" value="<%= key %>"><%= value %></button></li>
+                <% end %>
+              </ul>
+            </div>
+          </span>
+
 
           <% if ms.is_hidden_by_cur_user %>
             <span> | </span><%= link_to "unhide", story_unhide_path(ms.short_id), :class => "hider" %>

@@ -94,15 +94,22 @@ class="story <%= story.current_upvoted? ? "upvoted" : "" %>
             :class => "suggester" %>
         <% end %>
         <% if !story.is_gone? && @user %>
-          <% if @user && story.current_flagged? %>
-            <span> | </span><a class="flagger">unflag (<%=
-              Vote::STORY_REASONS[story.current_vote[:reason]].to_s.downcase %>)</a>
-          <% elsif @user && @user.can_flag?(story) %>
-            <span> | </span>
-            <span class="dropdown_parent">
-              <a class="flagger">flag</a>
-            </span>
-          <% end %>
+          <span class="dropdown_parent">
+            <% if @user && story.current_flagged? %>
+              <span> | </span><button class="flagger" popovertarget="flag_<%= story.short_id %>">unflag (<%=
+                Vote::STORY_REASONS[story.current_vote[:reason]].to_s.downcase %>)</button>
+            <% elsif @user && @user.can_flag?(story) %>
+              <span> | </span>
+                <button type="button" class="flagger" popovertarget="flag_<%= story.short_id %>" value="unvote">flag</button>
+            <% end %>
+            <div class="archive-dropdown flag-dropdown" id="flag_<%= story.short_id %>" popover>
+              <ul>
+                <% Vote::STORY_REASONS.each do |key,value| %>
+                  <li><button class="<%= key.empty? ? "cancel-reason" : "" %>" type="button" value="<%= key %>"><%= value %></button></li>
+                <% end %>
+              </ul>
+            </div>
+          </span>
           <% if story.is_hidden_by_cur_user %>
             <span> | </span><%= link_to "unhide", story_unhide_path(story.short_id), :class => "hider" %>
           <% else %>
@@ -120,9 +127,11 @@ class="story <%= story.current_upvoted? ? "upvoted" : "" %>
           <span class="dropdown_parent">
             <button type="button" class="archive_button" popovertarget="archive_<%= story.short_id %>">caches</button>
             <div class="archive-dropdown" popover id="archive_<%= story.short_id %>">
-              <a href="<%= story.archiveorg_url %>">Archive.org</a>
-              <a href="<%= story.archivetoday_url %>">Archive.today</a>
-              <a href="<%= story.ghost_url %>">Ghostarchive</a>
+              <ul>
+                <li><a href="<%= story.archiveorg_url %>">Archive.org</a></li>
+                <li><a href="<%= story.archivetoday_url %>">Archive.today</a></li>
+                <li><a href="<%= story.ghost_url %>">Ghostarchive</a></li>
+              </ul>
             </div>
           </span>
         <% end %>

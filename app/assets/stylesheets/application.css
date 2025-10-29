@@ -902,37 +902,53 @@ div.comment_text code {
 }
 
 .archive-dropdown {
+	position: absolute;
+	border: 1px solid var(--color-box-border);
+	border-bottom: 0;
 	/* Reset width, so max() will work. */
 	width: auto;
 	width: max(100px, max-content);
 	inset: auto;
 	padding: 0;
-	margin: 5px 0 0 0;
+	margin: 0;
 	position-area: bottom span-right;
 	overflow: visible; /* Allow focus ring to be visible */
 	position-try-fallbacks: --custom-left, --custom-bottom
 }
 
-@supports (position-area: left) {
++@supports (position-area: left) {
 	.archive-dropdown {
 		word-break: normal;
 	}
 }
 
+.flag-dropdown {
+	margin-left: 0.4rem; /* Accounts for the space that the "|" takes. */
+}
 
-#flag_dropdown a, .archive-dropdown a {
+.archive-dropdown ul {
+	list-style: none;
+	padding: 0;
+}
+
+.archive-dropdown button, .archive-dropdown a {
 	background-color: var(--color-box-bg);
 	border-bottom: 1px solid var(--color-box-border);
 	color: var(--color-fg-contrast-10);
 	display: block;
 	font-size: 9pt;
 	padding: 3px;
+	width: 100%;
+	text-align: left;
+	box-sizing: border-box;
+}
+.archive-dropdown a {
 	text-decoration: underline;
 }
-#flag_dropdown a:hover, .archive-dropdown a:hover {
+.archive-dropdown button:hover, .archive-dropdown a:hover {
 	background-color: var(--color-box-bg-shaded);
 }
-#flag_dropdown a.cancel-reason {
+.archive-dropdown button.cancel-reason {
 	background-color: var(--color-box-bg-shaded);
 	font-size: 8pt;
 }
