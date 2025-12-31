@@ -1774,17 +1774,6 @@ input[type="submit"].link_post.pushover_button {
 		margin-left: 35px;
 	}
 
-	/* explicitly reset color when not upvoted, since previously-upvoted arrow
-	 * will still be triggering :hover until next tap */
-	div.voters .upvoter:hover:before {
-		color: transparent;
-		-webkit-text-stroke: 1px var(--color-fg-contrast-4-5);
-	}
-	.upvoted div.voters .upvoter:before {
-		color: var(--color-fg-accent);
-		-webkit-text-stroke: 1px var(--color-fg-accent);
-	}
-
 	ol.stories.list {
 		margin-top: 0;
 	}
