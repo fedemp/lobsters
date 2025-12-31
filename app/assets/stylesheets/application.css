@@ -138,7 +138,7 @@ a.tag_announce, a.tag_ask, a.tag_show, a.tag_interview {
 	text-decoration: none;
 }
 .hat_openbsd_developer .crown {
-	font-family: comic sans ms, comic sans, comic neue, sans-serif;
+	font-family: "comic sans ms", "comic sans", "comic neue", sans-serif;
 	font-size: 7pt;
 }
 .hat_sysop {
@@ -597,7 +597,13 @@ li.story a.tag {
 }
 
 li .tags {
-	margin-right: 0.25em;
+	list-style: none;
+	display: inline-block;
+	padding: 0;
+}
+
+li .tags li {
+	display: inline;
 }
 
 li .domain {
