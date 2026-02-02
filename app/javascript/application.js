@@ -13,6 +13,7 @@ import "TomSelect_remove_button"
 import "TomSelect_caret_position"
 import "TomSelect_input_autogrow"
 
+
 export const csrfToken = () => {
   return qS('meta[name="csrf-token"]').getAttribute('content');
 }
@@ -93,20 +94,15 @@ export const removeExtraInputs = () => {
 }
 
 /**
- * @template {string} K
+ * @template T
  * @param {unknown} obj
- * @param {K[]} keys
- * @returns {obj is {[P in K]: string}}
+ * @param {Array<keyof T>} props
+ * @returns {asserts obj is T}
  */
-function hasProperties(obj, keys) {
-	return (
-		isObject(obj) &&
-		keys.every(
-			(key) =>
-				key in obj &&
-				typeof (/** @type {{[key]: unknown}} */ (obj)[key]) === "string",
-		)
-	);
+function assertHasProperties(obj, props) {
+  if (!(isObject(obj) && props.every(p => p in obj))) {
+    throw new Error("Object and keys mismatch");
+  }
 }
 
 /** @param {unknown} obj @returns obj is object */
@@ -122,58 +118,61 @@ function notify(msg) {
 		}
 }
 
-/** @param {HTMLFormElement} form @param {HTMLInputElement} submitter */
-async function asyncFormSubmit(form, submitter) {
+/** @param {SubmitEvent} ev */
+export async function asyncFormSubmit(ev) {
+	ev.preventDefault();
+
+	const submitter = /** @type {HTMLInputElement} */ (ev.submitter);
+	const form = /** @type {HTMLFormElement} */ (ev.target);
+
 	// Prevent double submissions
 	if (submitter.disabled) {
-		return;
+		throw new Error();
 	}
 
 	submitter.disabled = true;
 
 	try {
 		const response = await fetch(form.action, {
-			method: "POST",
+			method: form.method,
 			body: new FormData(form),
 			headers: {
 				Accept: "application/json",
 			},
 		});
 
-		let body;
+    const textBody = await response.text();
 
 		try {
-			body = await response.json();
-		} catch {
-			body = await response.text();
-		}
+      const body = JSON.parse(textBody);
 
-		if (!response.ok) {
-			throw new Error(
-				typeof body === "string"
-					? body
-					: hasProperties(body, ["error"])
-						? body.error
-						: "Bad response",
-			);
-		}
+			if (response.ok && isObject(body)) {
+				return body;
+			}
 
-		return {
-			ok: true,
-			body,
-		};
+			if (
+				isObject(body) &&
+				"message" in body
+			) {
+				throw new Error(`${ body.message }`);
+			}
+
+			throw new Error("Bad response");
+		} catch (err) {
+			// Either the response body was not JSON, or the response was not ok.
+      if (textBody) {
+        throw new Error(textBody);
+      }
+      throw err;
+		}
 	} catch (err) {
 		const error = err instanceof Error ? err : new Error(JSON.stringify(err));
 		notify(error.message);
-		return {
-			ok: false,
-			error: error,
-		};
+		throw error;
 	} finally {
 		submitter.disabled = false;
 	}
 }
-
 
 export class _LobstersFunction {
   constructor () {
@@ -308,23 +307,6 @@ export class _LobstersFunction {
     Lobster.checkStoryTitle();
   }
 
-  hideStory(hiderEl) {
-    if (!Lobster.curUser) return Lobster.bounceToLogin();
-
-    const li = parentSelector(hiderEl, ".story, .comment");
-    let act;
-    if (li.classList.contains("hidden")) {
-      act = "unhide";
-      li.classList.remove("hidden");
-      hiderEl.innerHTML = "hide";
-    } else {
-      act = "hide";
-      li.classList.add("hidden");
-      hiderEl.innerHTML = "unhide";
-    }
-    fetchWithCSRF("/stories/" + li.getAttribute("data-shortid") + "/" + act, {method: 'post'});
-  }
-
   removeFlagModal() {
     qS('#flag_dropdown').remove();
     qS('#modal_backdrop').remove();
@@ -406,46 +388,80 @@ export class _LobstersFunction {
     });
   }
 
-  /** @param {SubmitEvent} ev */
-  async saveStory(ev) {
-    ev.preventDefault();
+	/** @param {SubmitEvent} ev */
+	async hideStory(ev) {
+		await Lobster._handleStoryAction(ev, {
+			selector: ".hider",
+			stateProp: "hidden",
+			classToggle: "hidden",
+			activeText: "unhide",
+			inactiveText: "hide",
+		});
+	}
 
-    const target = /** @type {HTMLFormElement} */ (ev.target);
-    const submitter = /** @type {HTMLInputElement} */ (ev.submitter);
+	/** @param {SubmitEvent} ev */
+	async saveStory(ev) {
+		await Lobster._handleStoryAction(ev, {
+			selector: ".saver",
+			stateProp: "saved",
+			classToggle: "saved",
+			activeText: "unsave",
+			inactiveText: "save",
+		});
+	}
 
-    // Make sure to handle all "save" buttons in merged stories.
-    const story = parentSelector(target, ".story");
-    const forms = Array.from(qSA(story, ".saver")).filter(
-      (f) => f instanceof HTMLFormElement,
-    );
-    const btns = Array.from(qSA(story, ".saver input[type='submit']")).filter(
-      (b) => b instanceof HTMLInputElement,
-    );
+	/**
+	 * @param {SubmitEvent} ev
+	 * @param {{selector: string, stateProp: string, classToggle: string, activeText: string, inactiveText: string}} config
+	 */
+	async _handleStoryAction(ev, config) {
+		const submitter = /** @type {HTMLInputElement} */ (ev.submitter);
+		const story = parentSelector(submitter, ".story");
+		const btns = Array.from(
+			qSA(story, `${config.selector} input[type=submit]`),
+		).filter((el) => el instanceof HTMLInputElement);
 
-    for (const b of btns) {
-      if (b !== submitter) {
-        b.disabled = true;
-      }
-    }
+		const setButtonsDisabled = (/** @type boolean */ state) => {
+			for (const btn of btns) {
+				if (btn !== submitter) btn.disabled = state;
+			}
+		};
 
-    const data = await asyncFormSubmit(target, submitter);
+		setButtonsDisabled(true);
 
-    if (data?.ok && hasProperties(data.body, ["action", "cta"])) {
-      for (const f of forms) {
-        f.action = data.body.action;
-      }
+		try {
+			const data = await asyncFormSubmit(ev);
 
-      for (const b of btns) {
-        b.value = data.body.cta;
-      }
+			const { stateProp } = config;
 
-      story.classList.toggle("saved");
-    }
+			assertHasProperties(data, [stateProp, "nextAction"]);
+			if (
+				typeof data[stateProp] !== "boolean" ||
+				typeof data["nextAction"] !== "string"
+			) {
+				throw new Error("Bad response for" + config.selector);
+			}
 
-    for (const b of btns) {
-      b.disabled = false;
-    }
-  }
+			const isTrue = data[stateProp];
+			const nextAction = data["nextAction"];
+
+			qSA(story, config.selector).forEach((el) => {
+				if (el instanceof HTMLFormElement) {
+					el.action = nextAction;
+				}
+			});
+
+			story.classList.toggle(config.classToggle, isTrue);
+
+			btns.forEach((b) => {
+				b.value = isTrue ? config.activeText : config.inactiveText;
+			});
+		} catch (err) {
+			console.error(`${err}`);
+		} finally {
+			setButtonsDisabled(false);
+		}
+	}
 
   tomSelect(_item) {
     if (!qS('#story_tags')) {
@@ -743,10 +759,7 @@ document.addEventListener("DOMContentLoaded", () => {
     Lobster.modalFlaggingDropDown("story", event.target, reasons);
   });
 
-  on('click', 'li.story a.hider', (event) => {
-    event.preventDefault();
-    Lobster.hideStory(event.target);
-  });
+  on('submit', 'li.story .hider', Lobster.hideStory);
 
   on('submit', 'li.story .saver', Lobster.saveStory)
 
