@@ -29,20 +29,20 @@ RSpec.describe "search controller", type: :request do
     expect(response.body).to include("0 results")
   end
 
-   it "can find a comment" do
-     get "/search", params: {q: "hello", what: "comments", order: "newest"}
- 
-     expect(response).to be_successful
-     expect(response.body).to include("world")
-   end
- 
-+  it "can search stories" do
-+    get "/search", params: {q: "foo", what: "stories", order: "newest"}
-+
-+    expect(response).to be_successful
-+    expect(response.body).to include("bar")
-+  end
-+
+  it "can find a comment" do
+    get "/search", params: {q: "hello", what: "comments", order: "newest"}
+
+    expect(response).to be_successful
+    expect(response.body).to include("world")
+  end
+
+  it "can search stories" do
+    get "/search", params: {q: "foo", what: "stories", order: "newest"}
+
+    expect(response).to be_successful
+    expect(response.body).to include("bar")
+  end
+
   it "doesn't allow sql injection" do
     # real query that threw a 500 in prod
     get "/search", params: {q: "tag:formalmethods tag:testing') AND EXTRACTVALUE(4050,CONCAT(0x5c,0x7170787171,(SELECT (ELT(4050=4050,1))),0x71627a6b71)) AND ('pDUW'='pDUW", what: "stories", order: "newest"}
