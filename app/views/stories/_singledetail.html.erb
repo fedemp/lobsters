@@ -25,8 +25,13 @@ classes = [
 <li id="story_<%= short_id %>" data-shortid="<%= short_id %>" class="<%= classes.join(' ') %>">
 <div class="story_liner h-entry">
   <div class="voters">
-    <%= link_to (merged_stories.first.show_score_to_user?(@user) ? merged_stories.first.score : '~'),
-                (@user ? '': login_path), :class => "upvoter" %>
+    <% if @user %>
+      <%= form_with :class => "upvoter", url: merged_stories.first.current_upvoted? ? story_unvote_path(merged_stories.first.short_id) : story_upvote_path(merged_stories.first.short_id) do |form| %>
+        <%= form.submit merged_stories.first.show_score_to_user?(@user) ? merged_stories.first.score : '~', aria: { label: "Upvote story", pressed: merged_stories.first.current_upvoted? } %>
+      <% end %>
+    <% else %>
+      <%= link_to (merged_stories.first.show_score_to_user?(@user) ? merged_stories.first.score : '~'), (login_path), :class => "upvoter", aria: {label: "Login to upvote"} %>
+    <% end %>
   </div>
 
   <% merged_stories.filter {it.can_be_seen_by_user?(@user)}.each do |ms| %>

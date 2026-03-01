@@ -73,10 +73,14 @@
       <label for="comment_folder_<%= comment.short_id %>" class="comment_folder"></label>
     <% end %>
     <% score = comment_score_for_user(comment, @user)%>
-    <% if !comment.is_gone? %>
-      <%= link_to upvoter_score(score), (@user ? '': login_path), :class => "upvoter", :title => score %>
-    <% elsif @user&.is_moderator? %>
-      <span class="upvoter"><%= score %></span>
+    <% if @user %>
+      <% if !comment.is_gone? || @user.is_moderator %>
+        <%= form_with :class => "upvoter", url: comment.current_upvoted? ? unvote_comment_path(comment.short_id) : upvote_comment_path(comment.short_id) do |form| %>
+          <%= form.submit score, :class => "btn-link" , aria: { label: "Upvote comment", pressed: comment.current_upvoted? } %>
+        <% end %>
+      <% end %>
+    <% else %>
+      <%= link_to score, (login_path), :class => "upvoter", aria: {label: "Login to upvote"} %>
     <% end %>
   </div>
 

@@ -93,16 +93,16 @@ export const removeExtraInputs = () => {
 }
 
 /**
- * @template T
+ * @template {string} K
  * @param {unknown} obj
- * @param {Array<keyof T>} props
- * @returns {obj is T}
+ * @param {readonly K[]} props
+ * @returns {obj is Record<K, unknown>}
  */
 function hasProperties(obj, props) {
   return isObject(obj) && props.every((p) => p in obj);
 }
 
-/** @param {unknown} obj @returns obj is object */
+/** @param {unknown} obj */
 function isObject(obj) {
 	return typeof obj === "object" && !!obj;
 }
@@ -115,20 +115,8 @@ function notify(msg) {
 		}
 }
 
-/** @param {SubmitEvent} ev */
-export async function asyncFormSubmit(ev) {
-  ev.preventDefault();
-
-  const submitter = /** @type {HTMLInputElement} */ (ev.submitter);
-  const form = /** @type {HTMLFormElement} */ (ev.target);
-
-  // Prevent double submissions
-  if (submitter.disabled) {
-    return;
-  }
-
-  submitter.disabled = true;
-
+/** @param {HTMLFormElement} form */
+export async function asyncFormSubmit(form) {
   try {
     const response = await fetch(form.action, {
       method: form.method,
@@ -142,7 +130,7 @@ export async function asyncFormSubmit(ev) {
 
     const body = JSON.parse(textBody);
 
-    if (response.ok && isObject(body)) {
+    if (isObject(body)) {
       return body;
     }
 
@@ -157,8 +145,6 @@ export async function asyncFormSubmit(ev) {
     const error = err instanceof Error ? err : new Error(JSON.stringify(err));
     notify(error.message);
     throw error;
-  } finally {
-    submitter.disabled = false;
   }
 }
 
@@ -377,6 +363,26 @@ export class _LobstersFunction {
   }
 
   /** @param {SubmitEvent} ev */
+  async upvoteStory(ev) {
+    /** @type unknown */
+    const data = await Lobster._handleStoryAction(ev, {
+      selector: ".upvoter",
+      stateProp: "upvoted",
+      classToggle: "upvoted",
+    });
+
+    if (hasProperties(data, ['upvoted'])) {
+      data
+    }
+
+
+    data.upvoted
+
+    const u = data[ "upvoted" ]
+
+  }
+
+  /** @param {SubmitEvent} ev */
   async hideStory(ev) {
     await Lobster._handleStoryAction(ev, {
       selector: ".hider",
@@ -389,61 +395,71 @@ export class _LobstersFunction {
 
   /** @param {SubmitEvent} ev */
   async saveStory(ev) {
-    await Lobster._handleStoryAction(ev, {
-      selector: ".saver",
-      stateProp: "saved",
-      classToggle: "saved",
-      activeText: "unsave",
-      inactiveText: "save",
-    });
+    const selector = ".saver";
+
+    const data = await Lobster._handleStoryAction(ev, { selector });
+
+    if (!data || !("saved" in data) || typeof data.saved !== "boolean") {
+      console.warn("Save action failed");
+      return;
+    }
+
+    const isSaved = data.saved;
+
+    ev.submitter?.closest('.story')?.classList.toggle("saved", isSaved)
+
   }
 
   /**
    * @param {SubmitEvent} ev
-   * @param {{selector: string, stateProp: string, classToggle: string, activeText: string, inactiveText: string}} config
+   * @param {HTMLFormElement[]} forms
    */
-  async _handleStoryAction(ev, config) {
+  async _handleStoryAction(ev, forms) {
+    ev.preventDefault();
+
+  for (const form of forms) {
+    for (const btn of /** @type {NodeListOf<HTMLInputElement>} */(qSA(form, 'input[type=submit]'))) {
+      btn.disabled = true;
+    }
+  }
+
+    for (const form of forms) {
+      /** @param {HTMLInputElement} btn */
+      for (const btn of /** @type {NodeListOf<HTMLInputElement>} */ qSA(form, 'input[type=submit]')) {
+        btn.disabled = true;
+      }
+    }
+
+
     const submitter = /** @type {HTMLInputElement} */ (ev.submitter);
+    const form = /** @type {HTMLFormElement} */ (ev.currentTarget);
+
     const story = parentSelector(submitter, ".story");
-    const btns = Array.from(
-      qSA(story, `${config.selector} input[type=submit]`),
-    ).filter((el) => el instanceof HTMLInputElement);
 
     const setButtonsDisabled = (/** @type boolean */ state) => {
       for (const btn of btns) {
-        if (btn !== submitter) btn.disabled = state;
+        btn.disabled = state;
       }
     };
 
     setButtonsDisabled(true);
 
     try {
-      const data = await asyncFormSubmit(ev);
+      const data = await asyncFormSubmit(form);
 
-      const { stateProp } = config;
-
-      if (!hasProperties(data, [stateProp, "nextAction"])) {
-        return;
+      if (!( "nextAction" in data && typeof data.nextAction === "string")) {
+        throw new Error('Bad response');
       }
 
-      const isTrue = data[stateProp];
-      const nextAction = data["nextAction"];
+      const { nextAction } = data;
 
-      if (typeof isTrue !== "boolean" || typeof nextAction !== "string") {
-        throw new Error(`Bad response for ${config.selector}`);
-      }
+      // qSA(story, selector).forEach((el) => {
+      //   if (el instanceof HTMLFormElement) {
+      //     el.action = nextAction;
+      //   }
+      // });
 
-      qSA(story, config.selector).forEach((el) => {
-        if (el instanceof HTMLFormElement) {
-          el.action = nextAction;
-        }
-      });
-
-      story.classList.toggle(config.classToggle, isTrue);
-
-      btns.forEach((b) => {
-        b.value = isTrue ? config.activeText : config.inactiveText;
-      });
+      return data;
     } catch (err) {
       console.error(`${err}`);
     } finally {
@@ -487,10 +503,6 @@ export class _LobstersFunction {
 
   upvoteComment(voterEl) {
     Lobster.voteComment(voterEl, 1);
-  }
-
-  upvoteStory(voterEl) {
-    Lobster.voteStory(voterEl, 1);
   }
 
   voteStory(voterEl, point, reason) {

@@ -33,8 +33,14 @@ class="story <%= story.current_upvoted? ? "upvoted" : "" %>
 <%= story.is_deleted? ? "deleted" : "" %>">
 <div class="story_liner h-entry">
   <div class="voters">
-    <%= link_to (story.show_score_to_user?(@user) ? story.score : '~'),
-                (@user ? '': login_path), :class => "upvoter" %>
+    <% if @user %>
+      <%= form_with :class => "upvoter", url: story.current_upvoted? ? story_unvote_path(story.short_id) : story_upvote_path(story.short_id) do |form| %>
+        <%= form.submit story.show_score_to_user?(@user) ? story.score : '~', aria: { label: "Upvote story", pressed: story.current_upvoted? } %>
+
+      <% end %>
+    <% else %>
+      <%= link_to (story.show_score_to_user?(@user) ? story.score : '~'), (login_path), :class => "upvoter" %>
+    <% end %>
   </div>
   <div class="details">
     <span role="heading" aria-level="1" class="link h-cite u-repost-of">

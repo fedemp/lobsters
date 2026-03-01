@@ -252,19 +252,40 @@ class StoriesController < ApplicationController
   end
 
   def upvote
-    if !(story = find_story) || story.is_gone?
-      return render plain: "can't find story", status: 400
-    end
+    error =
+      if !(story = find_story)
+        "Can't find story"
+      elsif story.merged_into_story
+        "Story has been merged"
+      end
 
-    if story.merged_into_story
-      return render plain: "story has been merged", status: 400
+
+    if error
+      respond_to do |format|
+        format.html {
+          flash[:error] = error
+          redirect_to "/"
+        }
+        format.json {
+          render json: {message: error}, status: 400
+        }
+      end
+      return
     end
 
     Vote.vote_thusly_on_story_or_comment_for_user_because(
       1, story.id, nil, @user.id, nil
     )
 
-    render plain: "ok"
+    respond_to do |format|
+      format.html {
+        flash[:success] = "Story upvoted."
+        redirect_back_or_to Routes.title_path(story)
+      }
+      format.json {
+        render json: {upvoted: true, nextAction: story_unvote_path(story.short_id)}, status: :ok
+      }
+    end
   end
 
   def flag
