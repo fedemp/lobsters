@@ -118,8 +118,14 @@ classes = [
         <% else %>
           <% if ms.url.present? && (!ms.is_gone? || @user.try(:is_moderator?))  %>
             <%= divider_tag %>
-            <label for="caches_<%= ms.short_id %>" class="caches" tabindex="0">caches</label>
-          <% end %>
+            <details class="caches" name="caches">
+              <summary>caches</summary>
+                <ul>
+                  <li><a href="<%= ms.archiveorg_url %>">Archive.org</a></li>
+                  <li><a href="<%= ms.ghost_url %>">Ghostarchive</a></li>
+                </ul>
+            </details>
+        <% end %>
 
           <span class="comments_label">
             <%= divider_tag %>
@@ -132,15 +138,7 @@ classes = [
           <% if ((@user&.is_moderator? && ms.flags > 0) || (ms.flags >= 3 || ms.score <= 0)) %>
             <span> <%= divider_tag %><%= ms.vote_summary_for(@user).downcase %> </span>
           <% end %>
-        <% end %>
       </div>
-      <% if ms.url.present? && (!ms.is_gone? || @user.try(:is_moderator?)) %>
-        <input id="caches_<%= ms.short_id %>" class="caches_button" type="checkbox">
-        <div class="caches-dropdown">
-          <a href="<%= ms.archiveorg_url %>">Archive.org</a>
-          <%= divider_tag %>
-          <a href="<%= ms.ghost_url %>">Ghostarchive</a>
-        </div>
       <% end %>
     </div>
   <% end %>
