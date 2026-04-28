@@ -310,14 +310,11 @@ class StoriesController < ApplicationController
 
     HiddenStory.hide_story_for_user(story, @user)
 
-    respond_to do |format|
-      format.html {
-        flash[:success] = "Story hidden."
-        redirect_back_or_to Routes.title_path(story)
-      }
-      format.json {
-        render json: {hidden: true, nextAction: story_unhide_path(story.short_id)}, status: :ok
-      }
+    if request.headers["HX-Request"]
+      render partial: "hideformwithalert", locals: { story: story }
+    else
+      flash[:success] = "Story hidden."
+      redirect_back_or_to Routes.title_path(story)
     end
   end
 
@@ -339,14 +336,11 @@ class StoriesController < ApplicationController
 
     HiddenStory.unhide_story_for_user(story, @user)
 
-    respond_to do |format|
-      format.html {
-        flash[:success] = "Story unhidden."
-        redirect_back_or_to Routes.title_path(story)
-      }
-      format.json {
-        render json: {hidden: false, nextAction: story_hide_path(story.short_id)}, status: :ok
-      }
+    if request.headers["HX-Request"]
+      render partial: "hideformwithalert", locals: { story: story }
+    else
+      flash[:success] = "Story unhidden."
+      redirect_back_or_to Routes.title_path(story)
     end
   end
 

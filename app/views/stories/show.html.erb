@@ -35,18 +35,7 @@
     <% end %>
   <% end %>
 
-  <% if @story.is_hidden_by_cur_user %>
-    <div id="hide-alert">
-      You have <a href="/about#story-hiding">hidden this</a> story.
-      You won't be notified of replies or @mentions.
-      Links to this story and its comments will not be shown elsewhere on the site for you.
-      You can
-      <%= form_with :class => "hider", url: story_unhide_path(@story.short_id) do |form| %>
-        <%= form.submit "unhide", :class => "btn-link" %>
-      <% end %>
-      it to make them visible again.
-    </div>
-  <% end %>
+  <%= render partial: "stories/hidealert", locals: { story: @story } %>
 
   <% if (matched_filtered_tags = @story.tags & filtered_tags).any? %>
     This story has <%= matched_filtered_tags.count > 1 ? "tags" : "a tag" %> you filtered.

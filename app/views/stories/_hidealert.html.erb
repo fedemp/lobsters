@@ -1,0 +1,15 @@
+<%# locals: (story:) -%>
+
+<% is_hidden_by_cur_user = story.is_hidden_by_user?(@user) %>
+<% form_action = story_unhide_path(story.short_id) %>
+
+<div id="hide-alert" hx-swap-oob="true">
+  <% if story.is_hidden_by_user?(@user) %>
+    <%= form_with url: form_action, data: {"hx-trigger": "submit", "hx-post": form_action } do |form| %>
+      You have <a href="/about#story-hiding">hidden this</a> story.
+      You won't be notified of replies or @mentions.
+      Links to this story and its comments will not be shown elsewhere on the site for you.
+      You can <%= form.submit "unhide", :class => "btn-link" %> it to make them visible again.
+    <% end %>
+  <% end %>
+</div>

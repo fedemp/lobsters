@@ -13,6 +13,8 @@ import "TomSelect_remove_button"
 import "TomSelect_caret_position"
 import "TomSelect_input_autogrow"
 
+import "htmx.org"
+
 export const csrfToken = () => {
   return qS('meta[name="csrf-token"]').getAttribute('content');
 }
@@ -381,17 +383,6 @@ export class _LobstersFunction {
         previewElement.innerHTML = text;
         Lobster.tomSelect();
       });
-    });
-  }
-
-  /** @param {SubmitEvent} ev */
-  async hideStory(ev) {
-    await Lobster._handleStoryAction(ev, {
-      selector: ".hider",
-      stateProp: "hidden",
-      classToggle: "hidden",
-      activeText: "unhide",
-      inactiveText: "hide",
     });
   }
 
@@ -767,8 +758,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const reasons = Lobster.storyFlagReasons;
     Lobster.modalFlaggingDropDown("story", event.target, reasons);
   });
-
-  on('submit', 'li.story .hider', Lobster.hideStory);
 
   on('submit', 'li.story .saver', Lobster.saveStory)
 

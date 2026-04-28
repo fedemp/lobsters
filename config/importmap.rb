@@ -13,3 +13,4 @@ pin "TomSelect_remove_button", to: "TomSelect_remove_button.js"
 
 pin "tom-select", to: "./vendor/assets/stylesheets/tom-select.css"
 pin "tom-remove", to: "./vendor/assets/stylesheets/TomSelect_remove_button.css"
+pin "htmx.org" # @2.0.10

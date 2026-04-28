@@ -244,9 +244,7 @@ class="story <%= story.current_upvoted? ? "upvoted" : "" %>
             </span>
           <% end %>
           <%= divider_tag %>
-          <%= form_with :class => "hider", url: story.is_hidden_by_cur_user ? story_unhide_path(story.short_id) : story_hide_path(story.short_id) do |form| %>
-            <%= form.submit story.is_hidden_by_cur_user ? "unhide" : "hide", :class => "btn-link" %>
-          <% end %>
+          <%= render partial: "stories/hideform", locals: { story: story, showcount: false } %>
           <%= divider_tag %>
           <%= form_with :class => "saver", url: story.is_saved_by_cur_user ? story_unsave_path(story.short_id) : story_save_path(story.short_id) do |form| %>
             <%= form.submit story.is_saved_by_cur_user ? "unsave" : "save", :class => "btn-link" %>

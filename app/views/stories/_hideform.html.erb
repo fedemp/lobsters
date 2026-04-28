@@ -1,0 +1,16 @@
+<%# locals: (story:, showcount: true) -%>
+
+<% is_hidden_by_cur_user = story.is_hidden_by_user?(@user) %>
+<% form_action = is_hidden_by_cur_user ? story_unhide_path(story.short_id) : story_hide_path(story.short_id) %>
+
+<%= form_with class: "hider", url: form_action, data: {"hx-trigger": "submit", "hx-post": form_action, "hx-swap-oob": "outerHTML:#story_#{story.short_id} .byline .hider"  } do |form| %>
+  <%= form.submit is_hidden_by_cur_user ? "unhide" : "hide", :class => "btn-link" %>
+
+  <% if showcount && story.hider_count > 0 %>
+    <% if is_hidden_by_cur_user %>
+      (hidden by you and <%= pluralize(story.hider_count - 1, "other user") %>)
+    <% else %>
+      (hidden by <%= pluralize(story.hider_count, "user") %>)
+    <% end %>
+  <% end %>
+<% end %>
